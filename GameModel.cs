@@ -11,17 +11,15 @@ namespace Game
     {
         public Ship Ship { get; set; }
         public Ball Ball { get; set; }
-        public List<Brick> Bricks { get; set; }
+        public HashSet<Brick> Bricks { get; set; }
 
         public GameModel()
         {
-            Bricks = new List<Brick>();
+            Bricks = new HashSet<Brick>();
 
-            Ship = new Ship(148, 125, 10);
-            Ship.Location = new Point(535, 600);
+            Ship = new Ship(535, 670, 152, 56, 10);
 
-            Ball = new Ball(32);
-            Ball.Location = new Point(535, 600);
+            Ball = new Ball(613, 700 - 32 - Ship.Frame.Height, 32, 2, -Math.PI / 4);
             var w = 185;
             var h = 50;
             for (int i = 0; i < 10; i++)
@@ -36,9 +34,28 @@ namespace Game
 
         public void Move(Rectangle spaceRect, Turn turnRate)
         {
-           var newX = (int)(Ship.Location.X + (int)turnRate * Ship.Velocity);
-           Ship.Location = new Point(Math.Min(Math.Max(newX, 0), spaceRect.Width-Ship.Width/2), Ship.Location.Y);
-           
+            var newX = (int)(Ship.Frame.X + (int)turnRate * Ship.Velocity);
+            Ship.Frame = new Rectangle(KeepInForm(newX, spaceRect.Width - Ship.Frame.Width), Ship.Frame.Y,
+                Ship.Frame.Width, Ship.Frame.Height);
+            var ballX = (int)(Ball.Frame.X + Math.Cos(Ball.Direction) * Ball.Velocity);
+            var ballY = (int)(Ball.Frame.Y + Math.Sin(Ball.Direction) * Ball.Velocity);
+            Ball.Frame = new Rectangle(ballX, ballY, Ball.Frame.Width, Ball.Frame.Height);
+            var toRemove = Bricks.Where(x => x.Block.IntersectsWith(Ball.Frame)).ToList();
+            if (toRemove.Count != 0)
+            {
+                Ball.Direction += Math.PI / 2;
+                Bricks.ExceptWith(toRemove);
+            }
+            if (Ball.Frame.IntersectsWith(Ship.Frame))
+                Ball.Direction += Math.PI/2;
+            if (Ball.Frame.Top <= spaceRect.Top || Ball.Frame.Right >= spaceRect.Right
+                || Ball.Frame.Left <= spaceRect.Left || Ball.Frame.Bottom >= spaceRect.Bottom)
+                Ball.Direction += Math.PI/2;
+        }
+
+        public static int KeepInForm(int value, int edge)
+        {
+            return Math.Min(Math.Max(value, 0), edge);
         }
     }
 }

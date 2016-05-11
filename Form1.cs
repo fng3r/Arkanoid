@@ -27,11 +27,12 @@ namespace Game
             this.game = game;
             DoubleBuffered = true;
             Text = "ARKANOID";
-            ship = Image.FromFile(@"images\ship.png");
+            ship = Image.FromFile(@"images\ship_1.gif");
             ball = Image.FromFile(@"images\ball.png");
             brick = Image.FromFile(@"images\brick.png");
             timer = new Timer();
             timer.Interval = 10;
+            MinimizeBox = false;
             WindowState = FormWindowState.Maximized;
             Focus();
             timer.Tick += TimerTick;
@@ -79,9 +80,9 @@ namespace Game
             if (timer.Enabled)
             {
                 var matrix = g.Transform;
-                g.DrawImage(ball, new Point(game.Ball.Location.X, game.Ball.Location.Y));
+                g.DrawImage(ball, new Point(game.Ball.Frame.X, game.Ball.Frame.Y));
                 g.Transform = matrix;
-                g.DrawImage(ship, new Point(game.Ship.Location.X, game.Ship.Location.Y));
+                g.DrawImage(ship, new Point(game.Ship.Frame.X, game.Ship.Frame.Y));
 
                 foreach (var b in game.Bricks)
                 {

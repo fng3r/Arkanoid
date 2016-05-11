@@ -14,27 +14,27 @@ namespace Game
 
     public class Ship : GameElement
     {
-        public Point Location { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
+        public Rectangle Frame { get; set; }
         public double Velocity { get; set; }
 
-        public Ship(int width, int height, int velocity)
+        public Ship(int x, int y, int width, int height, int velocity)
         {
-            Width = width;
-            Height = height;
+            Frame = new Rectangle(x, y, width, height);
             Velocity = velocity;
         }
     }
 
     public class Ball : GameElement
     {
-        public Point Location { get; set; }
-        public int Radius { get; set; }
+        public Rectangle Frame { get; set; }
+        public double Velocity { get; set; }
+        public double Direction { get; set; }
 
-        public Ball(int radius)
+        public Ball(int x, int y, int radius, double velocity, double direction)
         {
-            Radius = radius;
+            Frame = new Rectangle(x, y, radius, radius);
+            Velocity = velocity;
+            Direction = direction;
         }
     }
 
