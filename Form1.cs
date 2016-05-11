@@ -16,6 +16,7 @@ namespace Game
         GameModel game;
         Image ship;
         Image ball;
+        Image brick;
         bool left;
         bool right;
         Timer timer;
@@ -28,6 +29,7 @@ namespace Game
             Text = "ARKANOID";
             ship = Image.FromFile(@"images\ship.png");
             ball = Image.FromFile(@"images\ball.png");
+            brick = Image.FromFile(@"images\brick.png");
             timer = new Timer();
             timer.Interval = 10;
             WindowState = FormWindowState.Maximized;
@@ -77,17 +79,13 @@ namespace Game
             if (timer.Enabled)
             {
                 var matrix = g.Transform;
-                g.TranslateTransform(game.Ball.Location.X, game.Ball.Location.Y);
-                g.DrawImage(ball, new Point(-game.Ball.Radius / 2, -game.Ball.Radius / 2));
+                g.DrawImage(ball, new Point(game.Ball.Location.X, game.Ball.Location.Y));
                 g.Transform = matrix;
-                g.TranslateTransform(game.Ship.Location.X, game.Ship.Location.Y);
-                g.DrawImage(ship, new Point(-game.Ship.Width / 2, -game.Ship.Height / 2));
+                g.DrawImage(ship, new Point(game.Ship.Location.X, game.Ship.Location.Y));
 
-                foreach (var brick in game.Bricks)
+                foreach (var b in game.Bricks)
                 {
-                    g.Transform = matrix;
-                    //g.TranslateTransform(block.Location.X, block.Location.Y);
-                    g.FillRectangle(Brushes.Green, brick.Block);
+                    g.DrawImage(brick, new Point(b.Block.X, b.Block.Y));
                 }
             }
         }
