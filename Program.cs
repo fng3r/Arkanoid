@@ -18,6 +18,7 @@ namespace Game
             var form = new GameForm(gameModel);
             Application.EnableVisualStyles();
             Application.Run(form);
+
         }
     }
 }

@@ -12,4 +12,10 @@ namespace Game
         Left = -1,
         Right = 1
     }
+
+    public enum BallState
+    {
+        Free,
+        Caught
+    }
 }
