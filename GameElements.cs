@@ -19,13 +19,13 @@ namespace Game
             Frame = new Rectangle(x, y, width, height);
             Velocity = velocity;
             Direction = direction;
-            if (!(this is Ship))
+            if (!(this is Ship))                                                 
                 Img = Image.FromFile(string.Format(@"images\{0}.png", GetType().Name));
         }
 
         public void Move()
         {
- 
+            
             var newX = (int)(Frame.X + Math.Cos(Direction) * Velocity);
             var newY = (int)(Frame.Y + Math.Sin(Direction) * Velocity);
             Frame = new Rectangle(newX, newY, Frame.Width, Frame.Height);
@@ -50,9 +50,9 @@ namespace Game
                 Frame.Width, Frame.Height);
         }
 
-        public Image ResizeImg()
+        public void ResizeImg()
         {
-            return (Image)new Bitmap(Img, Frame.Width, Frame.Height);
+            Img = (Image)new Bitmap(Img, Frame.Width, Frame.Height);
         }
 
     }

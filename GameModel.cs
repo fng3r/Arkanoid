@@ -13,11 +13,12 @@ namespace Game
         public Ship Ship { get; private set; }
         public Ball Ball { get; private set; }
         public int Scores { get; private set; }
-        public int Lifes { get; private set; } = 3;
+        public int Lifes { get; set; } = 3;
         public Level Level { get; private set; }
         Random rnd;
         public List<Bonus> Bonuses {get; private set;}
         public List<Bullet> Bullets { get; private set; }
+        public Size SizeOfWindow { get; private set; }
 
         int lvl = 1;
         Dictionary<int, Level> levels;
@@ -25,8 +26,9 @@ namespace Game
         public event Action LevelCompleted;
         public bool GameOver;
 
-        public GameModel()
+        public GameModel(Size size)
         {
+            SizeOfWindow = size;
             SetDefault();
             levels = GetLevels();
             Level = levels[lvl];
@@ -81,12 +83,15 @@ namespace Game
             var toRemove = Level.Blocks.Where(x => x.Frame.IntersectsWith(Ball.Frame)).ToList();
             if (toRemove.Count != 0)
             {
-                Ball.Direction += Ball.Direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+                if (Ball.State != BallState.Flaming )
+                    Ball.Direction += Ball.Direction > 0 ? Math.PI / 2 : -Math.PI / 2;
                 Level.Blocks.ExceptWith(toRemove);
                 var chance = rnd.NextDouble();
                 var rect = toRemove.First().Frame;
+                var listOfBonus = new List<Bonus>() { new LifeMinus(rect.X, rect.Y, rect.Width, rect.Height), new LifePlus(rect.X, rect.Y, rect.Width, rect.Height), new ExpandBonus(rect.X, rect.Y, rect.Width, rect.Height), new DecreaseBonus(rect.X, rect.Y, rect.Width, rect.Height), new BulletBonus(rect.X, rect.Y, rect.Width, rect.Height), new FireBallBonus(rect.X, rect.Y, rect.Width, rect.Height), new FastBallBonus(rect.X, rect.Y, rect.Width, rect.Height) };
+                var random = new Random();
                 if (chance > 0.7)
-                    Bonuses.Add(new BulletBonus(rect.X, rect.Y, rect.Width, rect.Height));
+                    Bonuses.Add(listOfBonus[random.Next(listOfBonus.Count)]);
                 Scores += 30 * toRemove.Count;
             }
 
@@ -96,7 +101,7 @@ namespace Game
                 bonus.Move();
                 if (bonus.Frame.IntersectsWith(Ship.Frame))
                 {
-                    bonus.Act(Ship);
+                    bonus.Act(this);
                     bonusesRemove.Add(bonus);
                 }
             }
@@ -131,12 +136,13 @@ namespace Game
             SetDefault();
         }
 
-        void SetDefault()
-        { 
-            Ship = new Ship(535, 670, 152, 56, 10);
+        public void SetDefault()
+        {
+            Bonuses = new List<Bonus>();
+            Ship = new Ship((SizeOfWindow.Width - 189)/2, SizeOfWindow.Height, 189, 44, 10);
             var ballX = Ship.Frame.X + (Ship.Frame.Width - 32) / 2;
             var ballY = Ship.Frame.Y - 32;
-            Ball = new Ball(ballX, ballY, 32, 4, -Math.PI / 4);
+            Ball = new Ball(ballX, ballY, 32, 6, -Math.PI / 4);
             Bullets = new List<Bullet>();
         }
 
@@ -144,8 +150,10 @@ namespace Game
         {
             var dict = new Dictionary<int, Level>();
 
+            var wnum = 11;
+            var hnum = 10;
             var level = 1;
-            var width1 = 185;
+            var width1 = (SizeOfWindow.Width - wnum*100)/2;
             var height1 = 50;
             HashSet<Brick> blocks1 = new HashSet<Brick>();
             for (int i = 0; i < 11; i++)
@@ -195,7 +203,7 @@ namespace Game
             yield return Ship;
             yield return Ball;
             foreach (var block in Level.Blocks)
-                yield return block;
+                yield return block;  
             foreach (var bullet in Bullets)
                 yield return bullet;
             foreach (var bonus in Bonuses)

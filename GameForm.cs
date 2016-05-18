@@ -23,6 +23,7 @@ namespace Game
 
         public GameForm(GameModel game)
         {
+            Size = game.SizeOfWindow;
             this.game = game;
             DoubleBuffered = true;
             Text = "ARKANOID";
@@ -35,7 +36,7 @@ namespace Game
             game.LevelCompleted += () =>
             {
                 timer.Stop();
-                for (int i = 1; i < 1000; i += 2)
+                for (int i = 1; i < 400; i += 2)
                 {
                     CreateGraphics().DrawString("LEVEL COMPLETED", new Font("Arial", i / 5 + 1, FontStyle.Bold), Brushes.Red, (Width - 12 * i/5)/2, (Height-i/5)/2);
                     Invalidate();
@@ -44,8 +45,8 @@ namespace Game
                 }
                 timer.Start();
             };
-
             timer.Start();
+            InitializeComponent();
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -88,7 +89,7 @@ namespace Game
             base.OnPaint(e);
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.FillRectangle(Brushes.Black, ClientRectangle);
+           
 
             if (game != null)
             {
@@ -108,6 +109,28 @@ namespace Game
                 g.DrawString("GAME OVER", new Font("Arial", 50), Brushes.Red, (Width - 400) / 2, (Height - 50) / 2);
                 timer.Stop();
             };
+        }
+
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // GameForm
+            // 
+            this.BackgroundImage = Image.FromFile("images\\space.png");
+            this.ClientSize = new System.Drawing.Size(293, 272);
+            this.Name = "GameForm";
+            this.Load += new System.EventHandler(this.GameForm_Load);
+            this.ResumeLayout(false);
+
+        }   
+
+        private void GameForm_Load(object sender, EventArgs e)
+        {
+            System.Media.SoundPlayer Audio;
+            Audio = new System.Media.SoundPlayer("muzyka_kosmosa.wav");
+            Audio.Load();
+            Audio.PlayLooping();
         }
     }
 }

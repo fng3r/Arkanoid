@@ -16,6 +16,7 @@ namespace Game
     public enum BallState
     {
         Free,
-        Caught
+        Caught,
+        Flaming
     }
 }
