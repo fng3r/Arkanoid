@@ -13,12 +13,12 @@ namespace Game
         public Ship Ship { get; private set; }
         public Ball Ball { get; private set; }
         public int Scores { get; private set; }
-        public int Lifes { get; set; } = 3;
+        public int Lifes { get; set; }
         public Level Level { get; private set; }
         Random rnd;
-        public List<Bonus> Bonuses {get; private set;}
-        public List<Bullet> Bullets { get; private set; }
-        public Size SizeOfWindow { get; private set; }
+        public HashSet<Bonus> Bonuses {get; private set;}
+        public HashSet<Bullet> Bullets { get; private set; }
+        public Size WindowSize { get; private set; }
 
         int lvl = 1;
         Dictionary<int, Level> levels;
@@ -28,13 +28,15 @@ namespace Game
 
         public GameModel(Size size)
         {
-            SizeOfWindow = size;
+            WindowSize = size;
+            GameOver = false;
+            Lifes = 3;
             SetDefault();
             levels = GetLevels();
             Level = levels[lvl];
             rnd = new Random();
-            Bonuses = new List<Bonus>();
-            Bullets = new List<Bullet>();
+            Bonuses = new HashSet<Bonus>();
+            Bullets = new HashSet<Bullet>();
         }
 
         public void ReleaseBall()
@@ -53,6 +55,7 @@ namespace Game
                 Bullets.Add(b2);
             } 
         }
+
 
         public void Move(Rectangle window, Turn turnRate)
         {
@@ -80,19 +83,32 @@ namespace Game
                 GetNextLevel();
             }
 
-            var toRemove = Level.Blocks.Where(x => x.Frame.IntersectsWith(Ball.Frame)).ToList();
-            if (toRemove.Count != 0)
+            var blocksRemove = Level.Blocks.Where(x => x.Frame.IntersectsWith(Ball.Frame)).ToList();
+            if (blocksRemove.Count != 0)
             {
                 if (Ball.State != BallState.Flaming )
-                    Ball.Direction += Ball.Direction > 0 ? Math.PI / 2 : -Math.PI / 2;
-                Level.Blocks.ExceptWith(toRemove);
+                {
+                    var block = blocksRemove.First();
+                    if (!(Ball.Frame.Right <= block.Frame.Right && Ball.Frame.Left >= block.Frame.Left))
+                        Ball.Direction = Math.Sign(Ball.Direction) * Math.PI - Ball.Direction;
+                    else
+                    {
+
+                        if (Ball.Frame.Top < block.Frame.Bottom && Ball.Frame.Bottom > block.Frame.Bottom)
+                            Ball.Direction = -Ball.Frame.Top.CompareTo(block.Frame.Top) * Ball.Direction;
+                        if (Ball.Frame.Bottom > block.Frame.Top && Ball.Frame.Bottom < block.Frame.Bottom)
+                            Ball.Direction = Ball.Frame.Bottom.CompareTo(block.Frame.Bottom) * Ball.Direction;
+                    }
+                }
+                Level.Blocks.ExceptWith(blocksRemove);
                 var chance = rnd.NextDouble();
-                var rect = toRemove.First().Frame;
-                var listOfBonus = new List<Bonus>() { new LifeMinus(rect.X, rect.Y, rect.Width, rect.Height), new LifePlus(rect.X, rect.Y, rect.Width, rect.Height), new ExpandBonus(rect.X, rect.Y, rect.Width, rect.Height), new DecreaseBonus(rect.X, rect.Y, rect.Width, rect.Height), new BulletBonus(rect.X, rect.Y, rect.Width, rect.Height), new FireBallBonus(rect.X, rect.Y, rect.Width, rect.Height), new FastBallBonus(rect.X, rect.Y, rect.Width, rect.Height) };
-                var random = new Random();
-                if (chance > 0.7)
-                    Bonuses.Add(listOfBonus[random.Next(listOfBonus.Count)]);
-                Scores += 30 * toRemove.Count;
+                var rect = blocksRemove.First().Frame;
+                if (chance > 0.3)
+                {
+                    var bonus = Bonus.GetRandomBonus(rect.X, rect.Y, rnd);
+                    Bonuses.Add(bonus);
+                }
+                Scores += 30 * blocksRemove.Count;
             }
 
             var bonusesRemove = new List<Bonus>();
@@ -101,11 +117,11 @@ namespace Game
                 bonus.Move();
                 if (bonus.Frame.IntersectsWith(Ship.Frame))
                 {
-                    bonus.Act(this);
+                    bonus.Activate(this);
                     bonusesRemove.Add(bonus);
                 }
             }
-            Bonuses = Bonuses.Except(bonusesRemove).ToList();
+            Bonuses.ExceptWith(bonusesRemove);
 
             var bulletsRemove = new List<Bullet>();
             foreach (var bullet in Bullets)
@@ -114,57 +130,62 @@ namespace Game
                 foreach (var block in Level.Blocks)
                     if (bullet.Frame.IntersectsWith(block.Frame))
                     {
+                        blocksRemove.Add(block);
                         bulletsRemove.Add(bullet);
-                        toRemove.Add(block);
                     }
             }
-            Level.Blocks.ExceptWith(toRemove);
-            Bullets = Bullets.Except(bulletsRemove).ToList();
+            Level.Blocks.ExceptWith(blocksRemove);
+            Bullets.ExceptWith(bulletsRemove);
 
             if (Ball.Frame.IntersectsWith(Ship.Frame))
-                Ball.Direction += Ball.Direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+            {
+                var mid = Ship.Frame.Right - Ship.Frame.Width / 2;
+                Ball.Direction = -Math.PI / 2 + (Math.PI / 2 * (Ball.Frame.X - mid) / (Ship.Frame.Width / 2 + 20));
+            }
 
-            if (Ball.Frame.Top <= window.Top || Ball.Frame.Right >= window.Right
-                || Ball.Frame.Left <= window.Left)
-                Ball.Direction += Ball.Direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+            if (Ball.Frame.Top <= window.Top) Ball.Direction = -Ball.Direction;
+            else if (Ball.Frame.Right >= window.Right || Ball.Frame.Left <= window.Left)
+                Ball.Direction = Math.Sign(Ball.Direction) * Math.PI - Ball.Direction;
         }
 
         void GetNextLevel()
         {
             lvl++;
-            Level = levels[lvl];
-            SetDefault();
+            if (lvl < levels.Count)
+            {
+                Level = levels[lvl];
+                SetDefault();
+            }
         }
 
         public void SetDefault()
         {
-            Bonuses = new List<Bonus>();
-            Ship = new Ship((SizeOfWindow.Width - 189)/2, SizeOfWindow.Height, 189, 44, 10);
-            var ballX = Ship.Frame.X + (Ship.Frame.Width - 32) / 2;
-            var ballY = Ship.Frame.Y - 32;
-            Ball = new Ball(ballX, ballY, 32, 6, -Math.PI / 4);
-            Bullets = new List<Bullet>();
+            Bonuses = new HashSet<Bonus>();
+            Bullets = new HashSet<Bullet>();
+            Ship = new Ship((WindowSize.Width - Settings.ShipSize.Width)/2, WindowSize.Height);
+            var ballX = Ship.Frame.X + (Ship.Frame.Width - Settings.BallSize.Width) / 2;
+            var ballY = Ship.Frame.Y - Settings.BallSize.Height;
+            Ball = new Ball(ballX, ballY);
         }
 
         Dictionary<int, Level> GetLevels()
         {
             var dict = new Dictionary<int, Level>();
-
-            var wnum = 11;
-            var hnum = 10;
+            var wnum1 = 10;
+            var hnum1= 11;
             var level = 1;
-            var width1 = (SizeOfWindow.Width - wnum*100)/2;
+            var width1 = (WindowSize.Width - wnum1 * Settings.BrickSize.Width) / 2;
             var height1 = 50;
+
             HashSet<Brick> blocks1 = new HashSet<Brick>();
-            for (int i = 0; i < 11; i++)
-                for (int j = 0; j < 10; j++)
+            for (int i = 0; i < hnum1; i++)
+                for (int j = 0; j < wnum1; j++)
                 {
                     if (i % 2 == 1 && j != 0 && j != 9)
                         continue;
-                    var color = "blue";
                     var blockX = width1 + 100 * j;
                     var blockY = height1 + 30 * i;
-                    var block = new Brick(blockX, blockY, 100, 30, color);
+                    var block = new Brick(blockX, blockY);
                     blocks1.Add(block);
                 }
             dict[level] = new Level(level, blocks1);
@@ -176,8 +197,7 @@ namespace Game
             for (int i = 0; i < 11; i++)
                 for (int j = i % 2; j < 11; j += 2)
                 {
-                    var color = "blue";
-                    var block = new Brick(width2 + 100 * j, height2 + 30 * i, 100, 30, color);
+                    var block = new Brick(width2 + 100 * j, height2 + 30 * i);
                     blocks2.Add(block);
                 }
             dict[level] = new Level(level, blocks2);
@@ -189,8 +209,7 @@ namespace Game
             for (int i = 0; i < 10; i++)
                 for (int j = 0; j < 10; j++)
                 {
-                    var color = "blue";
-                    var block = new Brick(width3 + 100 * j, height3 + 30 * i, 100, 30, color);
+                    var block = new Brick(width3 + 100 * j, height3 + 30 * i);
                     blocks3.Add(block);
                 }
             dict[level] = new Level(level, blocks3);
@@ -209,10 +228,5 @@ namespace Game
             foreach (var bonus in Bonuses)
                 yield return bonus;
         }
-
-        //IEnumerator IEnumerable.GetEnumerator()
-        //{
-        //    return GetEnumerator();
-        //}
     }
 }

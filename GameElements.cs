@@ -10,7 +10,7 @@ namespace Game
         public double Velocity { get; set; }
         public double Direction { get; set; }
 
-        public Point Location => new Point(Frame.X, Frame.Y);
+        public Point Location => Frame.Location;
 
         public Image Img { get; set; }
 
@@ -38,7 +38,8 @@ namespace Game
     {
         public int Bullets { get; set; }
 
-        public Ship(int x, int y, int width, int height, int velocity) : base(x, y, width, height, velocity, 0)
+        public Ship(int x, int y) 
+            : base(x, y, Settings.ShipSize.Width, Settings.ShipSize.Height, 7, 0)
         {
             Img = Image.FromFile(@"images\ship.gif");
         }
@@ -52,7 +53,7 @@ namespace Game
 
         public void ResizeImg()
         {
-            Img = (Image)new Bitmap(Img, Frame.Width, Frame.Height);
+            Img = new Bitmap(Img, Frame.Width, Frame.Height);
         }
 
     }
@@ -61,8 +62,8 @@ namespace Game
     {
         public BallState State { get; set; }
 
-        public Ball(int x, int y, int radius, double velocity, double direction) 
-            : base(x, y, radius, radius, velocity, -Math.PI/4)
+        public Ball(int x, int y) 
+            : base(x, y, Settings.BallSize.Width, Settings.BallSize.Height, 6, -Math.PI/4)
         {
             State = BallState.Caught;
         }
@@ -77,9 +78,9 @@ namespace Game
     {
         public string Color { get; set; }
 
-        public Brick(int x, int y, int width, int height, string color) : base(x, y, width, height, 0, 0)
+        public Brick(int x, int y) : base(x, y, Settings.BrickSize.Width, Settings.BrickSize.Height, 0, 0)
         {
-            Color = color;
+
         }
 
     }

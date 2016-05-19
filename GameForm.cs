@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System.Media;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+
 using Timer = System.Windows.Forms.Timer;
 
 namespace Game
@@ -20,15 +16,19 @@ namespace Game
         bool right;
         Timer timer;
         bool paused;
+        bool started;
+        Button restartButton;
 
         public GameForm(GameModel game)
         {
-            Size = game.SizeOfWindow;
+            InitializeButtons();
+            InitializeComponent();
+            Size = game.WindowSize;
             this.game = game;
             DoubleBuffered = true;
             Text = "ARKANOID";
             timer = new Timer();
-            timer.Interval = 10;
+            timer.Interval = 5;
             MinimizeBox = false;
             WindowState = FormWindowState.Maximized;
             Focus();
@@ -36,17 +36,12 @@ namespace Game
             game.LevelCompleted += () =>
             {
                 timer.Stop();
-                for (int i = 1; i < 400; i += 2)
-                {
-                    CreateGraphics().DrawString("LEVEL COMPLETED", new Font("Arial", i / 5 + 1, FontStyle.Bold), Brushes.Red, (Width - 12 * i/5)/2, (Height-i/5)/2);
+                    CreateGraphics().DrawString("LEVEL COMPLETED", new Font("Arial", 40, FontStyle.Bold), Brushes.Red, (Width - 12 * 40)/2, (Height-40)/2);
+                    Thread.Sleep(1500);
                     Invalidate();
                     Update();
-                    Thread.Sleep(5);
-                }
                 timer.Start();
             };
-            timer.Start();
-            InitializeComponent();
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -56,6 +51,11 @@ namespace Game
             if (e.KeyCode == Keys.Right) right = true;
             if (e.KeyCode == Keys.Space) game.ReleaseBall();
             if (e.KeyCode == Keys.X) game.Shooting();
+            if (e.KeyCode == Keys.Enter)
+            {
+                started = true;
+                timer.Start();
+            }
 
             if (e.KeyCode == Keys.Escape)
             {
@@ -77,7 +77,10 @@ namespace Game
 
         private void TimerTick(object sender, EventArgs e)
         {
-            if (game == null) return;
+            if (game.GameOver)
+            {
+                
+            }
             Turn control = left ? Turn.Left : right ? Turn.Right : Turn.None;
             game.Move(ClientRectangle, control);
             Invalidate();
@@ -89,8 +92,15 @@ namespace Game
             base.OnPaint(e);
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-           
-
+            
+            if (!started)
+            {
+                g.DrawString("Press ENTER to start a new game",
+                    new Font("Arial", 30), Brushes.White, 350 , Height - 200);
+                g.DrawImage(Image.FromFile(@"images\arkanoid_logo.png"), new Point(250, 200));
+                return;
+            }
+            
             if (game != null)
             {
                 foreach (var item in game)
@@ -108,29 +118,42 @@ namespace Game
             {
                 g.DrawString("GAME OVER", new Font("Arial", 50), Brushes.Red, (Width - 400) / 2, (Height - 50) / 2);
                 timer.Stop();
+                Controls.Add(restartButton);
             };
         }
 
         private void InitializeComponent()
         {
-            this.SuspendLayout();
-            // 
-            // GameForm
-            // 
-            this.BackgroundImage = Image.FromFile("images\\space.png");
-            this.ClientSize = new System.Drawing.Size(293, 272);
-            this.Name = "GameForm";
-            this.Load += new System.EventHandler(this.GameForm_Load);
-            this.ResumeLayout(false);
+            SuspendLayout();
 
-        }   
+            BackgroundImage = Image.FromFile(@"images\space.png");
+            ClientSize = new Size(293, 272);
+            Name = "GameForm";
+            Load += new EventHandler(LoadMusic);
+            ResumeLayout(false);
+        }
 
-        private void GameForm_Load(object sender, EventArgs e)
+        private void InitializeButtons()
         {
-            System.Media.SoundPlayer Audio;
-            Audio = new System.Media.SoundPlayer("muzyka_kosmosa.wav");
-            Audio.Load();
-            Audio.PlayLooping();
+            restartButton = new Button();
+            restartButton.Size = new Size(400, 130);
+            restartButton.Location = new Point(500, 100);
+            restartButton.Image = Image.FromFile(@"images\restart.jpg");
+            restartButton.Click += (sender, args) =>
+            {
+                game = new GameModel(game.WindowSize);
+                started = false;
+                Controls.Remove(restartButton);
+                Invalidate();
+            };
+        }
+
+        private void LoadMusic(object sender, EventArgs e)
+        {
+            SoundPlayer Audio;
+            Audio = new SoundPlayer("muzyka_kosmosa.wav");
+            //Audio.Load();
+            //Audio.PlayLooping();
         }
     }
 }
